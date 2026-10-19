@@ -1,0 +1,11 @@
+#!/bin/sh
+# selene (Redmi 10) device hacks, run by device-hacks.service.
+
+# Wait for the Android property service and NVRAM (Wi-Fi calibration).
+while [ ! -e /dev/socket/property_service ]; do sleep 0.1; done
+while [ "$(getprop vendor.service.nvram_init)" != "Ready" ]; do sleep 0.2; done
+
+# Turn the Wi-Fi adapter on in station mode (MediaTek WMT).
+while [ ! -e /dev/wmtWifi ]; do sleep 0.2; done
+echo S > /dev/wmtWifi
+setprop wifi.interface wlan0

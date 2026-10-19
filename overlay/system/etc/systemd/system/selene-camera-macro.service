@@ -1,0 +1,14 @@
+[Unit]
+Description=Expose the macro camera to the camera app (libcameraservice patch)
+DefaultDependencies=no
+After=mount-android-system.service mount-halium-overlay.service
+Requires=mount-android-system.service
+Before=sysinit.target lxc-android-config.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/selene-camera-macro
+
+[Install]
+WantedBy=sysinit.target

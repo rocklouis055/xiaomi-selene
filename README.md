@@ -1,0 +1,124 @@
+# Ubuntu Touch for the Xiaomi Redmi 10 (selene)
+
+Community port of [Ubuntu Touch](https://ubuntu-touch.io) 24.04 to the Redmi 10 /
+Redmi 10 Prime (`selene`, MediaTek Helio G85/G88, MT6768), on Halium 12 with the
+stock MIUI 14 (Android 12) vendor.
+
+| | |
+|---|---|
+| Codename | `selene` (models 21061119AG, 21061119BI, 21061119DG) |
+| Halium | 12 |
+| Ubuntu Touch | 24.04-2.x |
+| Kernel | 4.19, Xiaomi's MT6768 tree (MiCode `fire-t-oss`) with the selene board support ported to it: [kernel-xiaomi-selene](https://github.com/rocklouis055/kernel-xiaomi-selene), branch `halium-12` |
+| Vendor | Stock MIUI 14 Android 12 vendor (V14.0.x) |
+
+## Status
+
+Working (tested on 21061119BI):
+
+- Display (1080x2400, 60/90 Hz, switchable in System Settings), touch, backlight
+- Wi-Fi (IPv4 and IPv6), Bluetooth
+- Mobile network: calls with VoLTE and call audio, SMS, mobile data, signal strength (dual SIM)
+- Audio: stereo speakers, earpiece, headphone jack, microphone, speakerphone
+- Sensors: rotation, proximity, light
+- Cameras (camera app): photo and video, flash, autofocus
+- Battery level and fast charging (QC 2.0, 9 V)
+- USB: MTP/ADB/network to a PC, OTG host (keyboards, mice, storage, hubs),
+  and host mode while charging from a powered hub (see below)
+- Hardware video decoding and encoding (V4L2 and the Android codecs)
+- GPU: OpenGL ES and Vulkan 1.1 (Mali-G52) through libhybris
+- IR blaster (`selene-ir`)
+- Waydroid (Android apps)
+- TEE
+
+Not working / not tested:
+
+- Fingerprint: the FPC1022 driver works; enrolment from Ubuntu Touch is untested
+- Camera frame rates above 30 fps (high-speed modes give black frames)
+- No USB Power Delivery: the Type-C controller (WUSB3801) has none
+
+### USB host while charging
+
+The Type-C controller cannot negotiate power roles, so a powered hub makes the
+phone see a charger and switch its USB to device mode. `selene-otg-charge`
+puts the USB controller back into host mode when the phone charges and no USB
+host is talking to it, and lifts the input current cap while it does. A PC
+connection is unaffected (the phone stays a USB device). The hub needs a
+steady power supply: a laptop USB-A port is not enough.
+
+## Building
+
+```bash
+./build.sh
+```
+
+This runs the UBports
+[halium-generic-adaptation-build-tools](https://gitlab.com/ubports/porting/community-ports/halium-generic-adaptation-build-tools)
+through a small wrapper: kernel and boot image first, then the MediaTek
+connectivity modules (WMT, Wi-Fi, Bluetooth, connfem), then the device tarball.
+The modules are out-of-tree vendor drivers from Xiaomi's
+[MTK_kernel_modules](https://github.com/MiCode/MTK_kernel_modules) (branches
+`selene-r-oss-update` and `fire-t-oss`, pinned commits) plus
+`patches/connectivity/`; they must match the exact kernel build, so
+`scripts/build-connectivity.sh` builds them every time into
+`overlay/system/usr/share/halium-overlay/vendor/lib/modules/` (not committed).
+
+Output in `out/`: `boot.img` and the device tarball. CI uses the shared
+community-ports pipeline (`.gitlab-ci.yml`) with the wrapper.
+
+Host requirements are those of the build tools (git, python3, bc, bison, flex,
+libssl-dev, lz4, cpio...), plus `git` with partial clone support.
+
+## Installing
+
+TODO: installer config. Manual installation, for testers:
+
+1. Unlock the bootloader and flash the stock MIUI 14 (Android 12) firmware, so
+   the vendor partition is the one this port is built for.
+2. The port boots from slot **b**; the stock vendor stays on slot a
+   (`selene-dm-links` maps the `*_b` dynamic partitions to the `*_a` ones).
+3. `fastboot flash boot_b out/boot.img && fastboot set_active b`
+4. Install the Ubuntu Touch 24.04 rootfs with the device tarball, as
+   `/userdata/ubuntu.img`.
+
+## Layout
+
+| Path | What |
+|---|---|
+| `deviceinfo` | Device and build description for the build tools |
+| `build.sh`, `scripts/` | Build wrapper and the connectivity module build |
+| `patches/connectivity/` | Fixes to Xiaomi's connectivity sources for the 4.19 kernel |
+| `overlay/system/` | Installed into the Ubuntu Touch rootfs, laid out as in `/` |
+| `overlay/system/usr/share/halium-overlay/` | Bind-mounted over the Android vendor partition at boot |
+
+Main pieces of the overlay:
+
+- `etc/ofono/binder.conf`: modem (MTK RIL, IRadio 1.4, VoLTE)
+- `etc/systemd/system/selene-dm-links.service`: slot b to slot a partition links
+- `usr/libexec/lxc-android-config/device-hacks`: Wi-Fi bring-up (WMT)
+- `etc/deviceinfo/devices/selene.yaml`, `etc/default/lsc-wrapper.d/`, `etc/ubuntu-touch-session.d/`: display, Mir (HWC2), scaling
+- `selene-refresh-rate`: 60/90 Hz, with its System Settings page
+- `selene-audio-tuning`: speakerphone tuning for the vendor audio HAL
+- `selene-waydroid-binder`: binder devices for Waydroid
+- `selene-otg-charge`: USB host mode while charging
+- `selene-camera-macro`: makes the macro camera reachable from the camera
+  app; at boot it patches one instruction of the device's own
+  `libcameraservice.so` (known build only, checked by checksum) in a copy
+  under `/run` and bind-mounts it over the original
+- Lomiri component and camera app QML fixes for the screen shape and gestures
+
+## Licensing and firmware
+
+The scripts and configuration in this repository are under the GPL-3.0
+(`LICENSE`). Files that override parts of Ubuntu Touch (the Lomiri component
+and camera app QML) keep the licence of the project they come from.
+
+No vendor firmware or binaries are included. The touch controller firmware
+is loaded from the phone's own vendor partition (`firmware_class.path=/vendor/firmware`,
+set by the bootloader), the connectivity modules are built from Xiaomi's
+published GPL sources, and the camera fix patches the phone's own library at
+boot.
+
+## Credits
+
+Xiaomi (kernel and module sources), the UBports porters and the Halium project.

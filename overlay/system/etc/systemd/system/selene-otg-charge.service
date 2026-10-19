@@ -1,0 +1,10 @@
+[Unit]
+Description=USB host mode while charging from a powered hub
+After=multi-user.target
+
+[Service]
+ExecStart=/usr/libexec/selene-otg-charge
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

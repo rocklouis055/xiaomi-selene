@@ -1,0 +1,34 @@
+#!/bin/sh
+# Point the MediaTek audio HAL at selene's tuning files, with a louder
+# speakerphone.
+#
+# The HAL's parameter library picks its tuning directory from MIUI
+# properties (ro.miui.build.region, ro.product.cert) that do not exist under
+# Halium, so it falls back to /vendor/etc/audio_param, which holds a single
+# file. persist.vendor.audio.tuning.def_path overrides that choice.
+#
+# The tuning used is a copy of audio_param_k19a (Redmi 10, K19A) in which the
+# speakerphone speech volume (SpeechVol units 62 and 11, NB and WB "SPK") is
+# shifted so the loudest call volume step is not attenuated: stock applies a
+# 60 dB cut at full volume, which makes speakerphone calls very quiet.
+SRC=/vendor/etc/audio_param_k19a
+DST=/userdata/selene/audio_param_k19a_selene
+STAMP=$DST/.selene-tuning-v1
+
+if [ ! -f "$STAMP" ]; then
+    rm -rf "$DST"
+    mkdir -p "${DST%/*}"
+    cp -a "$SRC" "$DST" || exit 1
+    for id in 62 11; do
+        sed -i "/<ParamUnit param_id=\"$id\">/,/<\/ParamUnit>/ s/name=\"dl_gain\" value=\"30,27,24,21,18,15,12,9,6,3,0\"/name=\"dl_gain\" value=\"15,12,9,6,3,0,0,0,0,0,0\"/" \
+            "$DST/SpeechVol_AudioParam.xml"
+    done
+    chmod -R a+rX "$DST"
+    touch "$STAMP"
+fi
+
+# the property is persistent, so this only changes something on first boot
+# (pulseaudio picks it up the next time it starts)
+want="$DST/"
+[ "$(getprop persist.vendor.audio.tuning.def_path)" = "$want" ] && exit 0
+exec lxc-attach -n android -- /system/bin/setprop persist.vendor.audio.tuning.def_path "$want"

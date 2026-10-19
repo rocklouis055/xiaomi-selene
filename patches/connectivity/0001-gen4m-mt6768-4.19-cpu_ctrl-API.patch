@@ -1,0 +1,18 @@
+From: louise-patra <rocklouis055@gmail.com>
+Subject: [PATCH] gen4m: mt6768: use the 4.19 cpu_ctrl API for Wi-Fi CPU boost
+
+The selene 4.19 kernel replaced ppm_limit_data with cpu_ctrl_data.
+---
+diff --git a/connectivity/wlan/core/gen4m/os/linux/plat/mt6768/plat_priv.c b/connectivity/wlan/core/gen4m/os/linux/plat/mt6768/plat_priv.c
+index 8b7d4c3..d8599c7 100644
+--- a/connectivity/wlan/core/gen4m/os/linux/plat/mt6768/plat_priv.c
++++ b/connectivity/wlan/core/gen4m/os/linux/plat/mt6768/plat_priv.c
+@@ -38,7 +38,7 @@ int32_t kalBoostCpu(IN struct ADAPTER *prAdapter,
+ 		    IN uint32_t u4TarPerfLevel,
+ 		    IN uint32_t u4BoostCpuTh)
+ {
+-	struct ppm_limit_data freq_to_set[MAX_CLUSTER_NUM];
++	struct cpu_ctrl_data freq_to_set[MAX_CLUSTER_NUM];	/* 4.19 cpu_ctrl API */
+ 	int32_t i = 0, i4Freq = -1;
+ #ifdef WLAN_FORCE_DDR_OPP
+ 	static struct pm_qos_request wifi_qos_request;

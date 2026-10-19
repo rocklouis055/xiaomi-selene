@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="com.selene.display" path="/com/selene/display/">
+    <key name="refresh-rate" type="i">
+      <range min="60" max="90"/>
+      <default>90</default>
+      <summary>Display refresh rate (Hz)</summary>
+      <description>Applied by selene-refresh-rate-watch.service (needs root).</description>
+    </key>
+  </schema>
+</schemalist>

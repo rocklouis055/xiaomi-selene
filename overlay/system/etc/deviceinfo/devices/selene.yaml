@@ -1,0 +1,20 @@
+selene:
+  Vendor: Xiaomi
+  PrettyName: Redmi 10
+  DeviceType: phone
+  GridUnit: 21
+  SupportedOrientations:
+    - Portrait
+    - Landscape
+    - InvertedLandscape
+  MirAndroidPlatformServerPartialUpdates:
+    - false
+  MirAndroidPlatformServerBackpressure:
+    - true
+  MirAndroidPlatformServerEglSync:
+    - true
+  MirAndroidPlatformClientFenceSync:
+    - all
+  BacklightSysfsPath: "/sys/class/leds/lcd-backlight"
+  OfonoPlugin: binder
+  VibrateDurationExtraMs: 50

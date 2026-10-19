@@ -1,0 +1,39 @@
+#!/bin/sh
+# Make the macro camera reachable from the camera app (Android camera API1).
+#
+# The MediaTek camera HAL lists 6 cameras: 0 main, 1 front, 2 ultra-wide,
+# 3 depth, 4 macro, 5 logical (0 + 4). Android's
+# CameraProviderManager::filterLogicalCameraIdsLocked() hides the members of
+# a logical camera from API1, so the macro (4) is never offered.
+#
+# At boot, before the Android container starts, the first instruction of that
+# function in /system/lib64/libcameraservice.so is replaced by `ret` in a copy
+# under /run, which is bind-mounted over the original. Only the known library
+# (by checksum) is patched; any other build is left alone.
+set -eu
+
+LIB=${LIB:-/android/system/lib64/libcameraservice.so}
+OUT=${OUT:-/run/selene/libcameraservice.so}
+ORIG_SHA=1c83634bc71545f0b53326a0af69ee675d286dc9a1dd7b6248f971e813cc86b3
+DONE_SHA=a19fc9ccb8497226bdd236543bf122345dcb03352bdc5c2ff09619b67c9765b0
+OFFSET=$((0x105120))      # filterLogicalCameraIdsLocked: `sub sp, sp, #0xc0`
+
+sha() { sha256sum "$1" | cut -d' ' -f1; }
+
+case "$(sha "$LIB")" in
+    "$DONE_SHA") exit 0 ;;                       # already patched
+    "$ORIG_SHA") ;;
+    *) echo "selene-camera-macro: unknown libcameraservice.so, not patched" >&2; exit 0 ;;
+esac
+
+mkdir -p "$(dirname "$OUT")"
+cp "$LIB" "$OUT"
+# ff 03 03 d1 (sub sp) -> c0 03 5f d6 (ret)
+printf '\300\003\137\326' | dd of="$OUT" bs=1 seek="$OFFSET" conv=notrunc status=none
+if [ "$(sha "$OUT")" != "$DONE_SHA" ]; then
+    echo "selene-camera-macro: patch check failed, not applied" >&2
+    rm -f "$OUT"
+    exit 0
+fi
+[ -n "${NO_MOUNT:-}" ] && exit 0
+mount --bind "$OUT" "$LIB"

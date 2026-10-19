@@ -1,0 +1,35 @@
+#!/usr/bin/python3
+"""Create Waydroid's own binder devices on selene.
+
+The host's Android (Halium) container already uses /dev/binder, hwbinder and
+vndbinder. On Halium devices Waydroid only looks for separate nodes
+(anbox-binder, anbox-hwbinder, anbox-vndbinder), which other ports get from
+CONFIG_ANDROID_BINDER_DEVICES. selene's kernel has binderfs mounted at
+/dev/binderfs, so allocate the extra nodes through binder-control instead and
+link them into /dev.
+"""
+import fcntl
+import os
+import struct
+
+NODES = ["anbox-binder", "anbox-hwbinder", "anbox-vndbinder"]
+BINDERFS = "/dev/binderfs"
+
+# BINDER_CTL_ADD = _IOWR('b', 1, struct binderfs_device)  (name[256], major, minor)
+BINDER_CTL_ADD = (3 << 30) | (264 << 16) | (ord("b") << 8) | 1
+
+
+def main():
+    with open(os.path.join(BINDERFS, "binder-control"), "rb") as ctl:
+        for node in NODES:
+            if not os.path.exists(os.path.join(BINDERFS, node)):
+                fcntl.ioctl(ctl.fileno(), BINDER_CTL_ADD, struct.pack("256sII", node.encode(), 0, 0))
+    for node in NODES:
+        link = os.path.join("/dev", node)
+        if not os.path.lexists(link):
+            os.symlink(os.path.join(BINDERFS, node), link)
+        os.chmod(os.path.join(BINDERFS, node), 0o666)
+
+
+if __name__ == "__main__":
+    main()

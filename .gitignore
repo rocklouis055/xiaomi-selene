@@ -1,0 +1,6 @@
+# build tools, downloads and output
+/build/
+/workdir/
+/out/
+# built by scripts/build-connectivity.sh for the exact kernel, never committed
+/overlay/system/usr/share/halium-overlay/vendor/lib/modules/

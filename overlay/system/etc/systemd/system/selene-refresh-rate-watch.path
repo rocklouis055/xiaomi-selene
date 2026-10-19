@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch the System Settings refresh-rate choice (selene)
+
+[Path]
+PathChanged=/home/phablet/.config/dconf/user
+Unit=selene-refresh-rate-watch.service
+
+[Install]
+WantedBy=multi-user.target

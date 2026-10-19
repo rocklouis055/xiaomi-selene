@@ -1,0 +1,56 @@
+#!/bin/sh
+# Switch the selene display between 60 Hz and 90 Hz.
+#
+#   selene-refresh-rate          show the saved setting
+#   selene-refresh-rate 90       switch now and keep it across reboots (needs root/sudo)
+#   selene-refresh-rate 60
+#   selene-refresh-rate apply    re-apply the saved setting (used at boot)
+#
+# System Settings > Refresh rate does the same through
+# selene-refresh-rate-watch.service.
+#
+# The panel driver exposes two display configs (dynamic fps). Since kernel
+# commit "selene: list 90 Hz as the default display config" config 0 is 90 Hz,
+# so the Android hardware composer starts in 90 Hz and Mir/Lomiri paces frames
+# at 90. 60 Hz is reached by forcing config 1 through MediaTek's display debug
+# interface (/proc/mtkfb). Older kernels list 60 Hz first; there 90 Hz has to
+# be forced instead, and Lomiri keeps pacing at 60.
+# default in /etc, choice saved on /userdata (the root filesystem is read-only)
+CONF=/etc/selene-refresh-rate
+SAVED=/userdata/selene/refresh-rate
+MTKFB=/proc/mtkfb
+
+saved() { cat "$SAVED" 2>/dev/null || cat "$CONF" 2>/dev/null || echo 90; }
+
+# config id of the 90 Hz mode, from the driver's config table (logged at every
+# screen-on); defaults to the new order
+cfg90() {
+    l0=$(dmesg 2>/dev/null | grep -o 'init_multi_cfg_info,L\[0\]fps:[0-9]*' | tail -n 1 | cut -d: -f2)
+    [ "$l0" = 6000 ] && echo 1 || echo 0
+}
+
+apply() {
+    hi=$(cfg90)
+    lo=$((1 - hi))
+    case "$1" in
+        90) if [ "$hi" = 0 ]; then
+                # native default: stop forcing, let the composer run config 0
+                echo "enable_force_fps:0" > "$MTKFB" && echo "set_cfg_id:0" > "$MTKFB"
+            else
+                echo "enable_force_fps:1" > "$MTKFB" && echo "set_cfg_id:$hi" > "$MTKFB"
+            fi ;;
+        60) echo "enable_force_fps:1" > "$MTKFB" && echo "set_cfg_id:$lo" > "$MTKFB" ;;
+        *) echo "unsupported rate: $1 (use 60 or 90)" >&2; exit 1 ;;
+    esac
+}
+
+case "$1" in
+    "")    echo "$(saved) Hz" ;;
+    apply) apply "$(saved)" ;;
+    60|90)
+        if [ "$(id -u)" != 0 ]; then exec sudo "$0" "$@"; fi
+        apply "$1"
+        mkdir -p "${SAVED%/*}" && echo "$1" > "$SAVED"
+        echo "display set to $1 Hz" ;;
+    *) sed -n '2,10p' "$0"; exit 1 ;;
+esac

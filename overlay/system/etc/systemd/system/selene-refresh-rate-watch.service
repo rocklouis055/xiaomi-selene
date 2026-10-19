@@ -1,0 +1,6 @@
+[Unit]
+Description=Apply the System Settings refresh-rate choice (selene)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/selene-refresh-rate-watch

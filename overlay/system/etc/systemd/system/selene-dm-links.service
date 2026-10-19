@@ -1,0 +1,11 @@
+[Unit]
+Description=selene: map slot-b names to the stock slot-a dynamic partitions
+DefaultDependencies=no
+Before=mount-android-partitions.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for d in /dev/mapper/*_a; do b=$${d%%_a}_b; [ -e "$$b" ] || ln -s "$${d##*/}" "$$b"; done'
+
+[Install]
+WantedBy=sysinit.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Point the audio HAL at selene's tuning files (selene)
+After=lxc-android-config.service
+Wants=lxc-android-config.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# setprop needs the Android container's property service
+ExecStartPre=/bin/sh -c 'for i in $(seq 120); do [ "$(getprop sys.boot_completed)" = 1 ] && exit 0; sleep 1; done'
+ExecStart=/usr/libexec/selene-audio-tuning
+
+[Install]
+WantedBy=multi-user.target

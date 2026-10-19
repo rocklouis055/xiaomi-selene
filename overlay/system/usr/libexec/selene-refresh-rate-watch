@@ -1,0 +1,11 @@
+#!/bin/sh
+# Apply the refresh rate chosen in System Settings (GSettings key
+# com.selene.display refresh-rate, stored in phablet's dconf database).
+# Run as root by selene-refresh-rate-watch.path whenever that database changes.
+want=$(runuser -u phablet -- dconf read /com/selene/display/refresh-rate 2>/dev/null)
+case "$want" in
+    60|90) ;;
+    *) want=90 ;;   # key never set: schema default
+esac
+[ "$want" = "$(/usr/bin/selene-refresh-rate | cut -d" " -f1)" ] && exit 0
+exec /usr/bin/selene-refresh-rate "$want"

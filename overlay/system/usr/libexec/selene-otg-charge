@@ -1,0 +1,90 @@
+#!/bin/sh
+# USB host mode while charging: a powered USB hub (or an "OTG with charging"
+# adapter) feeds the phone, so the phone sees a charger and its USB goes to
+# device mode, and nothing plugged into the hub is seen. This phone's Type-C
+# chip (WUSB3801) has no USB-PD, so it cannot be host and power sink by the
+# book; the USB controller can still be put in host mode while the charger
+# keeps charging (usb20_host "option": 1 = host, 2 = release).
+#
+# Only when no USB host talks to the phone: on a PC (or any other USB host)
+# the phone must stay a USB device, and then the gadget is "configured"
+# within a few seconds (10 s are allowed). If host mode finds nothing on the
+# bus (a plain wall charger), the phone goes back to device mode.
+#
+# A hub often looks like a PC port to the charger ("Standard USB Host"),
+# which caps the input at 500 mA, less than the phone uses when busy. In
+# forced host mode that cap is lifted (MediaTek's usb_unlimited, and the
+# kernel's 400 mA cap for USB host ports, bq2589x_charger.sdp_input_limit_ua,
+# which keeps weak host ports from sagging); the charger's input-voltage
+# regulation still backs off on a weak supply. Both caps come back when the
+# hub goes.
+OPT=/sys/module/usb20_host/parameters/option
+CHG=/sys/class/power_supply/charger/online
+CMD=/proc/mtk_battery_cmd/current_cmd
+SDP=/sys/module/bq2589x_charger/parameters/sdp_input_limit_ua
+
+uncapped() { echo "1 0" > $CMD; echo 0 > $SDP; }
+capped() { echo "0 0" > $CMD; echo 400000 > $SDP; }
+UDC=/sys/class/udc/musb-hdrc/state
+CMODE=/sys/devices/platform/mt_usb/musb-hdrc/cmode
+
+# leave forced host mode: release it, and restart the USB device side (the
+# controller does not go back to device mode by itself, so a PC plugged in
+# next would not see the phone)
+release() {
+    echo 2 > $OPT
+    capped
+    echo 0 > $CMODE
+    sleep 1
+    echo 1 > $CMODE
+}
+
+forced=0      # host mode switched on by us
+tried=0       # already tried for this charger plug-in
+since=0       # seconds in the current wait
+off=0         # polls in a row without a charger
+
+# real devices: 1-1, 1-1.2...; not 1-0:1.0, the controller's own root hub
+devices() { ls /sys/bus/usb/devices | grep -c '^1-[1-9]'; }
+
+while sleep 2; do
+    if [ "$(cat $CHG 2>/dev/null)" != 1 ]; then
+        # a weak or flaky supply drops out for a moment now and then: only
+        # a charger that stays away (two polls, 4 s) counts as unplugged
+        [ $((off += 1)) -lt 2 ] && continue
+        if [ $forced = 1 ]; then
+            release
+            logger -t selene-otg-charge "charger gone: host mode released"
+        fi
+        forced=0 tried=0 since=0
+        continue
+    fi
+    off=0
+    if [ $forced = 1 ]; then
+        if [ "$(devices)" -gt 0 ]; then
+            since=0
+        elif [ $((since += 2)) -ge 8 ]; then
+            release
+            logger -t selene-otg-charge "nothing on the bus: back to device mode"
+            forced=0 since=0
+        fi
+        continue
+    fi
+    # host while charging with no Type-C partner: host mode was forced
+    # (by an earlier run of this script, or by hand)
+    if [ "$(devices)" -gt 0 ] && [ ! -e /sys/class/typec/port0-partner ]; then
+        uncapped
+        forced=1 tried=1
+        continue
+    fi
+    [ $tried = 1 ] && continue
+    # already host (the phone powers the bus), or a USB host is talking to us
+    [ "$(devices)" -gt 0 ] && continue
+    [ "$(cat $UDC 2>/dev/null)" = configured ] && { tried=1; continue; }
+    if [ $((since += 2)) -ge 10 ]; then
+        echo 1 > $OPT
+        uncapped
+        logger -t selene-otg-charge "charging and no USB host: host mode on"
+        forced=1 tried=1 since=0
+    fi
+done

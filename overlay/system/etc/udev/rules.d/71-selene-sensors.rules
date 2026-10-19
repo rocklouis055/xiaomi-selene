@@ -1,0 +1,4 @@
+# MediaTek sensor hub nodes, read by the Android sensors HAL (runs as system).
+# Not covered by the vendor ueventd.rc, so they would stay root-only.
+ACTION=="add", KERNEL=="m_*_misc", OWNER="system", GROUP="system", MODE="0660"
+ACTION=="add", KERNEL=="gsensor|msensor|sensorlist|hwmsensor|scp", OWNER="system", GROUP="system", MODE="0660"

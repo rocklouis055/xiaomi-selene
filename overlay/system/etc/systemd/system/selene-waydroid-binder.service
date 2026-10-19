@@ -1,0 +1,14 @@
+[Unit]
+Description=Create Waydroid binder devices (selene)
+After=mount-android-partitions.service
+Requires=mount-android-partitions.service
+Before=waydroid-container.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/selene-waydroid-binder
+
+[Install]
+WantedBy=multi-user.target
+RequiredBy=waydroid-container.service

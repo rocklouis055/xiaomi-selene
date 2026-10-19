@@ -1,0 +1,14 @@
+[Unit]
+Description=Apply the saved display refresh rate (selene, 60/90 Hz)
+# the Android hardware composer resets the panel to 60 Hz when it starts
+After=lxc-android-config.service
+Wants=lxc-android-config.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStartPre=/bin/sh -c 'for i in $(seq 60); do [ -e /proc/mtkfb ] && exit 0; sleep 1; done'
+ExecStart=/usr/bin/selene-refresh-rate apply
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+{
+    "icon": "display-brightness-symbolic",
+    "name": "Refresh rate",
+    "translations": "lomiri-system-settings",
+    "category": "system",
+    "priority": 5,
+    "form-factors": [
+        "phone",
+        "tablet"
+    ],
+    "keywords": [
+        "refresh",
+        "rate",
+        "display",
+        "screen",
+        "hz",
+        "90",
+        "60",
+        "smooth"
+    ],
+    "has-dynamic-keywords": false,
+    "has-dynamic-visibility": false,
+    "page-component": "PageComponent.qml"
+}
