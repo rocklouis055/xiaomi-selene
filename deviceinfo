@@ -43,9 +43,12 @@ deviceinfo_dtb_id="0x00000000"
 # The stock dtbo partition is kept (the charging setup is tuned for it).
 deviceinfo_skip_dtbo_partition="true"
 
-# No recovery partition on selene; TWRP lives in boot. No unified recovery yet.
+# No recovery partition on selene: the UBports recovery is part of the boot
+# image ("unified recovery"). LK passes androidboot.force_normal_boot=1 on a
+# normal boot only, so Volume Up + Power (or `reboot recovery`) starts it.
 deviceinfo_has_recovery_partition="false"
-deviceinfo_use_unified_recovery="false"
+deviceinfo_use_unified_recovery="true"
+deviceinfo_unified_recovery_ui_density="xxhdpi"
 
 deviceinfo_rootfs_image_sector_size="4096"
 # TODO: verify against the super partition layout before building system.img

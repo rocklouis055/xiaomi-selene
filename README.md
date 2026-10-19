@@ -30,6 +30,7 @@ Working (tested on 21061119BI):
 - IR blaster (`selene-ir`)
 - Waydroid (Android apps)
 - TEE
+- UBports recovery (Volume Up + Power), built into the boot image
 
 Not working / not tested:
 
@@ -88,6 +89,7 @@ TODO: installer config. Manual installation, for testers:
 | `deviceinfo` | Device and build description for the build tools |
 | `build.sh`, `scripts/` | Build wrapper and the connectivity module build |
 | `patches/connectivity/` | Fixes to Xiaomi's connectivity sources for the 4.19 kernel |
+| `ramdisk-recovery-overlay/` | Partition table for the UBports recovery |
 | `overlay/system/` | Installed into the Ubuntu Touch rootfs, laid out as in `/` |
 | `overlay/system/usr/share/halium-overlay/` | Bind-mounted over the Android vendor partition at boot |
 
