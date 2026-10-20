@@ -1,0 +1,13 @@
+# The halium initramfs starts recovery's init at its second stage, which reads
+# neither prop.halium nor init.recovery.${ro.hardware}.rc (ro.hardware is not
+# set yet), so the settings for the system-image upgrader are set here.
+#
+# Ubuntu Touch is installed into system_b, grown to 4500 MB first. super
+# (8.7 GB) only has room for that without the stock Android system partitions,
+# which Ubuntu Touch does not use; vendor_a (the drivers) is kept. They are
+# removed from the partition tables of both slots, so a slot a boot cannot
+# reuse their space.
+on init
+    setprop ro.systemimage.system_partition_size 4500
+    setprop ro.systemimage.remove_dynparts_slot_a system_a,system_ext_a
+    setprop ro.systemimage.remove_dynparts_slot_b system_a,system_ext_a

@@ -72,15 +72,29 @@ libssl-dev, lz4, cpio...), plus `git` with partial clone support.
 
 ## Installing
 
-TODO: installer config. Manual installation, for testers:
+The port boots from slot **b**. The stock vendor (the drivers) stays on slot a
+(`selene-dm-links` maps `vendor_b` to `vendor_a`), and Ubuntu Touch lives in
+the logical `system_b` partition, 4.5 GB.
+
+**Installing removes the stock Android system partitions** (`system_a`,
+`system_ext_a`) from super, which only has room for Ubuntu Touch without them.
+Stock MIUI does not boot afterwards; flash the stock firmware again to go
+back. Back up anything you need first.
 
 1. Unlock the bootloader and flash the stock MIUI 14 (Android 12) firmware, so
    the vendor partition is the one this port is built for.
-2. The port boots from slot **b**; the stock vendor stays on slot a
-   (`selene-dm-links` maps the `*_b` dynamic partitions to the `*_a` ones).
-3. `fastboot flash boot_b out/boot.img && fastboot set_active b`
-4. Install the Ubuntu Touch 24.04 rootfs with the device tarball, as
-   `/userdata/ubuntu.img`.
+2. `fastboot flash boot_b boot.img && fastboot set_active b`
+3. Boot into the UBports recovery (Volume Up + Power) and install Ubuntu
+   Touch with the UBports Installer, or push a system-image update to
+   `/cache/recovery`. The recovery removes the stock system partitions, grows
+   `system_b` to 4.5 GB and installs into it (the partition layout is set in
+   `ramdisk-recovery-overlay/system/etc/init/selene-systemimage.rc`).
+
+`ramdisk-recovery-overlay/system/bin/system-image-upgrader` is UBports' script
+with two fixes, marked `selene:`: `lpresize` changes the partition tables of
+both slots (the recovery maps the booted slot's table, the halium initramfs
+reads slot 0's), and the system partition is looked up again after the resize
+maps it to another device.
 
 ## Layout
 
@@ -89,7 +103,7 @@ TODO: installer config. Manual installation, for testers:
 | `deviceinfo` | Device and build description for the build tools |
 | `build.sh`, `scripts/` | Build wrapper and the connectivity module build |
 | `patches/connectivity/` | Fixes to Xiaomi's connectivity sources for the 4.19 kernel |
-| `ramdisk-recovery-overlay/` | Partition table for the UBports recovery |
+| `ramdisk-recovery-overlay/` | UBports recovery: partition table, install layout, fixed upgrader |
 | `overlay/system/` | Installed into the Ubuntu Touch rootfs, laid out as in `/` |
 | `overlay/system/usr/share/halium-overlay/` | Bind-mounted over the Android vendor partition at boot |
 

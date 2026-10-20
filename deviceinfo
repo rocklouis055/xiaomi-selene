@@ -12,7 +12,9 @@ deviceinfo_ubuntu_touch_release="24.04-2.x"
 deviceinfo_kernel_source="https://github.com/rocklouis055/kernel-xiaomi-selene.git"
 deviceinfo_kernel_source_branch="halium-12"
 deviceinfo_kernel_defconfig="selene_defconfig halium.config"
-deviceinfo_kernel_cmdline="bootopt=64S3,32N2,64N2 buildvariant=userdebug systemd.unified_cgroup_hierarchy=0"
+# systempart: Ubuntu Touch lives in the logical system partition of the
+# current slot (system_b); the initramfs adds the slot suffix.
+deviceinfo_kernel_cmdline="bootopt=64S3,32N2,64N2 buildvariant=userdebug systempart=/dev/mapper/system systemd.unified_cgroup_hierarchy=0"
 deviceinfo_kernel_clang_compile="true"
 deviceinfo_kernel_llvm_compile="true"
 deviceinfo_kernel_use_lld="true"
@@ -51,5 +53,6 @@ deviceinfo_use_unified_recovery="true"
 deviceinfo_unified_recovery_ui_density="xxhdpi"
 
 deviceinfo_rootfs_image_sector_size="4096"
-# TODO: verify against the super partition layout before building system.img
-deviceinfo_system_partition_size="4000M"
+# super is 8.7 GB; the UBports recovery makes room for this by removing the
+# stock Android system partitions (see ramdisk-recovery-overlay/prop.halium)
+deviceinfo_system_partition_size="4500M"
