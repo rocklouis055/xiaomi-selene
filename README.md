@@ -18,6 +18,8 @@ Working (tested on 21061119BI):
 
 - Display (1080x2400, 60/90 Hz, switchable in System Settings), touch, backlight
 - Wi-Fi (IPv4 and IPv6), Bluetooth
+- Wi-Fi hotspot, also while the phone itself stays on Wi-Fi (shares that
+  connection; `etc/NetworkManager/dispatcher.d/90-selene-hotspot`)
 - Mobile network: calls with VoLTE and call audio, SMS, mobile data, signal strength (dual SIM)
 - Audio: stereo speakers, earpiece, headphone jack, microphone, speakerphone
 - Sensors: rotation, proximity, light

@@ -1,0 +1,44 @@
+#!/bin/sh
+# Wi-Fi hotspot fixes for the MediaTek gen4m driver (NetworkManager dispatcher).
+#
+# 1. NetworkManager offers WPA-PSK-SHA256 next to WPA-PSK on the hotspot.
+#    The driver mishandles it in AP mode, so clients that pick it (most
+#    phones) keep rejecting the correct password. Offer plain WPA2-PSK
+#    without PMF.
+#    https://gitlab.com/ubports/development/core/packaging/network-manager/-/issues/5
+# 2. The network indicator disconnects Wi-Fi and turns off its autoconnect
+#    when the hotspot starts. The chip runs a station and an access point at
+#    once (separate ap0 interface, two channels), so let Wi-Fi reconnect: the
+#    hotspot then shares that connection.
+
+[ "$1" = ap0 ] && [ "$2" = up ] || exit 0
+
+id=$(wpa_cli -i ap0 status | sed -n 's/^id=//p')
+if [ -n "$id" ]; then
+    case "$(wpa_cli -i ap0 get_network "$id" key_mgmt) $(wpa_cli -i ap0 get_network "$id" ieee80211w)" in
+    *SHA256*|*" 1"|*" 2")
+        wpa_cli -i ap0 set_network "$id" key_mgmt WPA-PSK >/dev/null
+        wpa_cli -i ap0 set_network "$id" ieee80211w 0 >/dev/null
+        wpa_cli -i ap0 disable_network "$id" >/dev/null
+        wpa_cli -i ap0 enable_network "$id" >/dev/null
+        logger -t selene-hotspot "hotspot: plain WPA2-PSK"
+        ;;
+    esac
+fi
+
+nmcli device set wlan0 autoconnect yes
+# NetworkManager will not reconnect after the indicator's disconnect by
+# itself, and "nmcli device connect wlan0" would pick the hotspot profile:
+# bring back the most recently used station (non-AP) Wi-Fi connection.
+(
+    sleep 2
+    nmcli -t -f UUID,TYPE,TIMESTAMP connection show |
+    awk -F: '$2 == "802-11-wireless" { print $3, $1 }' | sort -rn |
+    while read -r ts uuid; do
+        [ "$(nmcli -g 802-11-wireless.mode connection show "$uuid")" = ap ] && continue
+        nmcli connection up "$uuid" ifname wlan0 >/dev/null 2>&1 &&
+            logger -t selene-hotspot "Wi-Fi reconnected next to the hotspot"
+        break
+    done
+) >/dev/null 2>&1 &
+exit 0
