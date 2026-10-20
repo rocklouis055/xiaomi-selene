@@ -22,7 +22,6 @@ Working (tested on 21061119BI):
   connection; `etc/NetworkManager/dispatcher.d/90-selene-hotspot`)
 - Mobile network: calls with VoLTE and call audio, SMS, mobile data, signal strength (dual SIM)
 - Audio: stereo speakers, earpiece, headphone jack, microphone, speakerphone
-- GPS (MediaTek GNSS, with the connectivity modules built here)
 - Sensors: rotation, proximity, light
 - Double tap to wake (System Settings; needs the kernel's NT36672C fix)
 - Cameras (camera app): photo and video, flash, autofocus, all rear cameras
@@ -42,6 +41,8 @@ Working (tested on 21061119BI):
 Not working / not tested:
 
 - Fingerprint: the FPC1022 driver works; enrolment from Ubuntu Touch is untested
+- GPS: the GNSS driver, mnld and the location service run and satellites
+  are predicted, but every satellite stays at 0 dB-Hz (no fix, even outdoors)
 - Camera frame rates above 30 fps (high-speed modes give black frames)
 - 1440p recording reaches about 25 fps rather than 30
 - No USB Power Delivery: the Type-C controller (WUSB3801) has none
