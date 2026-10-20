@@ -1,0 +1,8 @@
+# 50 MP mode (see selene-camera-50mp):
+# - run the 4-cell (remosaic) capture at any ISO, not only below the HAL's
+#   default threshold (which, indoors, silently gives an upscaled picture)
+# - remosaic library settings: light denoise, mild sharpening
+on boot
+    setprop vendor.debug.camera.threshold_4Cell 6400
+    setprop persist.vendor.remoshim.dn 5
+    setprop persist.vendor.remoshim.sharpen 60

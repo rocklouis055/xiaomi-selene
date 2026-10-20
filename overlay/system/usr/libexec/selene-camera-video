@@ -1,0 +1,64 @@
+#!/bin/sh
+# 1440p (2560x1440) video recording with the main camera.
+#
+# The video encoder handles 2560x1440 at 30 fps (Helio G88: "2K @ 30fps";
+# media_codecs: c2.mtk.avc.encoder max 2560x1440), but media_profiles_V1_0.xml
+# caps H.264 at 1920x1080 and has no 1440p camcorder profile. In a copy:
+# - the H.264 encoder cap becomes 2560x1440
+# - camera 0 gets a "qhd" (2560x1440, 30 fps) profile after its 1080p one
+# (the 2560x1440 camera stream itself comes from selene-camera-50mp)
+#
+# At boot, before the Android container starts, the copy is written under
+# /run/selene and bind-mounted over the original. Only the known file (by
+# checksum) is changed; any other version is left alone.
+set -eu
+
+XML=${XML:-/android/vendor/etc/media_profiles_V1_0.xml}
+OUT=${OUT:-/run/selene/media_profiles_V1_0.xml}
+ORIG_SHA=e5c561aee42bca49cfacf3b98ee3465c6ddef6a3573b463e8e823b83e64ffe58
+DONE_SHA=cc9c2901669e20b53fa45a7e7c739799c8a27c37b0bfd7f876fbdf293016655d
+
+sha() { sha256sum "$1" | cut -d' ' -f1; }
+
+case "$(sha "$XML")" in
+    "$DONE_SHA") exit 0 ;;
+    "$ORIG_SHA") ;;
+    *) echo "selene-camera-video: unknown media_profiles_V1_0.xml, not changed" >&2; exit 0 ;;
+esac
+
+DIR=$(dirname "$OUT")
+mkdir -p "$DIR"
+[ -n "${NO_MOUNT:-}" ] || mountpoint -q "$DIR" || \
+    mount -t tmpfs -o mode=0755,nosuid,size=16m selene "$DIR"
+awk '
+/<VideoEncoderCap name="h264"/ { cap = 1 }
+cap && /maxFrameWidth="1920"/  { sub(/maxFrameWidth="1920"/, "maxFrameWidth=\"2560\"") }
+cap && /maxFrameHeight="1080"/ { sub(/maxFrameHeight="1080"/, "maxFrameHeight=\"1440\"") }
+cap && /\/>/ { cap = 0 }
+/<CamcorderProfiles cameraId="0">/ { cam0 = 1 }
+/<\/CamcorderProfiles>/ { cam0 = 0 }
+cam0 && /<EncoderProfile quality="1080p"/ { in1080 = 1 }
+{ print }
+in1080 && /<\/EncoderProfile>/ {
+    in1080 = 0
+    print "        <EncoderProfile quality=\"qhd\" fileFormat=\"mp4\" duration=\"30\">"
+    print "            <Video codec=\"h264\""
+    print "                   bitRate=\"32000000\""
+    print "                   width=\"2560\""
+    print "                   height=\"1440\""
+    print "                   frameRate=\"30\" />"
+    print "            <Audio codec=\"aac\""
+    print "                   bitRate=\"192000\""
+    print "                   sampleRate=\"48000\""
+    print "                   channels=\"2\" />"
+    print "        </EncoderProfile>"
+}
+' "$XML" > "$OUT"
+chmod 644 "$OUT"
+if [ "$(sha "$OUT")" != "$DONE_SHA" ]; then
+    echo "selene-camera-video: change check failed, not applied" >&2
+    rm -f "$OUT"
+    exit 0
+fi
+[ -n "${NO_MOUNT:-}" ] && exit 0
+mount --bind "$OUT" "$XML"

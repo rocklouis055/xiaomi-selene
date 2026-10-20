@@ -10,8 +10,8 @@ BRANCH=${ADAPTATION_TOOLS_BRANCH:-main}
 [ -d build ] || git clone https://gitlab.com/ubports/porting/community-ports/halium-generic-adaptation-build-tools -b "$BRANCH" build
 
 # Android's init skips group/world-writable rc and prop files: make sure the
-# recovery overlay is not, whatever the umask of the checkout was.
-chmod -R go-w ramdisk-recovery-overlay
+# recovery and vendor overlays are not, whatever the umask of the checkout was.
+chmod -R go-w ramdisk-recovery-overlay overlay/system/usr/share/halium-overlay/vendor/etc
 
 ./build/build.sh -k "$@"                  # kernel and boot.img
 ./scripts/build-connectivity.sh workdir  # out-of-tree vendor modules

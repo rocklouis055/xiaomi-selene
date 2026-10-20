@@ -1,0 +1,14 @@
+[Unit]
+Description=1440p video recording (media_profiles copy)
+DefaultDependencies=no
+After=mount-android-system.service mount-halium-overlay.service
+Requires=mount-android-system.service
+Before=sysinit.target lxc-android-config.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/selene-camera-video
+
+[Install]
+WantedBy=sysinit.target

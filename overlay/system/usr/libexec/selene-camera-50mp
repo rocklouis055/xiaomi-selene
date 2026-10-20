@@ -1,0 +1,63 @@
+#!/bin/sh
+# Offer the main camera's 50 MP photos (8160x6144) and 1440p video to apps.
+#
+# The kernel's capture mode is the sensor's full 4-cell readout and the camera
+# HAL remosaics it (with the JN1 remosaic library in the vendor overlay). The
+# HAL's size list for this sensor, built by
+# constructCustStaticMetadata_PLATFORM_PROJECT_SENSOR_DRVNAME_S5KJN1_OFILM_MAIN_MIPI_RAW()
+# in libmtkcam_metastore.so, stops at 4096x3072 and has no 2560x1440. Its
+# first entry (JPEG 4096x3072) becomes JPEG 8160x6144, and the YUV 2560x1080
+# entry (21:9) becomes YUV 2560x1440 for 1440p video (the HAL derives the
+# implementation-defined entry from it; see also selene-camera-video): the
+# instructions that store those widths and heights call 3-instruction stubs
+# placed in the unused end of the code segment, whose size is extended to
+# cover them. Every other entry is unchanged.
+#
+# At boot, before the Android container starts, a copy of the device's own
+# library is patched under /run/selene and bind-mounted over the original.
+# Only the known library (by checksum) is patched; any other build is left
+# alone.
+set -eu
+
+LIB=${LIB:-/android/vendor/lib64/libmtkcam_metastore.so}
+OUT=${OUT:-/run/selene/libmtkcam_metastore.so}
+ORIG_SHA=864b1c6ab4bad6abf581c165e63f43ff535f1577d963a5bf39ddeda75375bfdc
+DONE_SHA=d9bba1131f8cdd0d51a9495514efd007531fcc14ed3eefa096ab93102f4a278f
+
+sha() { sha256sum "$1" | cut -d' ' -f1; }
+put() {   # offset hex-bytes (written as octal escapes: dash's printf has no \x)
+    hex=$2 esc=
+    while [ -n "$hex" ]; do
+        esc="$esc\\$(printf '%03o' "0x${hex%"${hex#??}"}")"
+        hex=${hex#??}
+    done
+    printf "$esc" | dd of="$OUT" bs=1 seek=$(($1)) conv=notrunc status=none
+}
+
+case "$(sha "$LIB")" in
+    "$DONE_SHA") exit 0 ;;
+    "$ORIG_SHA") ;;
+    *) echo "selene-camera-50mp: unknown libmtkcam_metastore.so, not patched" >&2; exit 0 ;;
+esac
+
+DIR=$(dirname "$OUT")
+mkdir -p "$DIR"
+# /run is noexec: the copy needs an exec mount (shared with selene-camera-macro)
+[ -n "${NO_MOUNT:-}" ] || mountpoint -q "$DIR" || \
+    mount -t tmpfs -o mode=0755,nosuid,size=16m selene "$DIR"
+cp "$LIB" "$OUT"
+put 0xd0     50d4                       # executable LOAD p_filesz 0x16d390 -> 0x16d450
+put 0xd8     50d4                       #                 p_memsz
+put 0x9ee28  76d10394                   # str x23,[sp,#0x20]    -> bl 0x193400
+put 0x9ee3c  79d10394                   # stp x19,x28,[sp,#0x18] -> bl 0x193420
+put 0x193400 09fc8352e91300f9c0035fd6   # mov w9,#8160 ; str x9,[sp,#0x20] ; ret
+put 0x193420 09008352f3a701a9c0035fd6   # mov w9,#6144 ; stp x19,x9,[sp,#0x18] ; ret
+put 0x9fbf8  12ce0394                   # str x21,[sp,#0x20] (YUV height 1080) -> bl 0x193440
+put 0x193440 09b48052e91300f9c0035fd6   # mov w9,#1440 ; str x9,[sp,#0x20] ; ret
+if [ "$(sha "$OUT")" != "$DONE_SHA" ]; then
+    echo "selene-camera-50mp: patch check failed, not applied" >&2
+    rm -f "$OUT"
+    exit 0
+fi
+[ -n "${NO_MOUNT:-}" ] && exit 0
+mount --bind "$OUT" "$LIB"

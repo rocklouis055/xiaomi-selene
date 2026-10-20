@@ -1,0 +1,14 @@
+[Unit]
+Description=Offer the 50 MP camera mode to apps (libmtkcam_metastore patch)
+DefaultDependencies=no
+After=mount-android-system.service mount-halium-overlay.service
+Requires=mount-android-system.service
+Before=sysinit.target lxc-android-config.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/selene-camera-50mp
+
+[Install]
+WantedBy=sysinit.target
