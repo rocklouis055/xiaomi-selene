@@ -21,7 +21,10 @@ Working (tested on 21061119BI):
 - Mobile network: calls with VoLTE and call audio, SMS, mobile data, signal strength (dual SIM)
 - Audio: stereo speakers, earpiece, headphone jack, microphone, speakerphone
 - Sensors: rotation, proximity, light
-- Cameras (camera app): photo and video, flash, autofocus
+- Cameras (camera app): photo and video, flash, autofocus, all rear cameras
+  including macro; real 50 MP photos (8160x6144) from the main camera
+- Video recording up to 2560x1440 at 30 fps (H.264, hardware encoder);
+  4K is beyond the encoder (2560x1440 maximum)
 - Battery level and fast charging (QC 2.0, 9 V)
 - USB: MTP/ADB/network to a PC, OTG host (keyboards, mice, storage, hubs),
   and host mode while charging from a powered hub (see below)
@@ -36,6 +39,7 @@ Not working / not tested:
 
 - Fingerprint: the FPC1022 driver works; enrolment from Ubuntu Touch is untested
 - Camera frame rates above 30 fps (high-speed modes give black frames)
+- 1440p recording reaches about 25 fps rather than 30
 - No USB Power Delivery: the Type-C controller (WUSB3801) has none
 
 ### USB host while charging
@@ -121,6 +125,16 @@ Main pieces of the overlay:
   app; at boot it patches one instruction of the device's own
   `libcameraservice.so` (known build only, checked by checksum) in a copy
   under `/run` and bind-mounts it over the original
+- `selene-camera-50mp`: 50 MP photos. The kernel reads out the full sensor
+  (4-cell Bayer); the camera HAL's own remosaic library (written for another
+  sensor) is overridden with an open-source one (`camera/remosaic-shim/`,
+  MIT); at boot a copy of `libmtkcam_metastore.so` with the 8160x6144 size in
+  its size table is bind-mounted over the original (checked by checksum)
+- `selene-camera-video`: offers 2560x1440 video in the camera app (copy of
+  `media_profiles_V1_0.xml` with a 1440p profile)
+- `camera/afsession-shim/`: preloaded into Halium's `camera_service` so that
+  stopping a video does not wait forever for Android's AudioFlinger (which
+  Ubuntu Touch does not run) and hang the camera app
 - Lomiri component and camera app QML fixes for the screen shape and gestures
 
 ## Licensing and firmware
@@ -132,9 +146,12 @@ and camera app QML) keep the licence of the project they come from.
 No vendor firmware or binaries are included. The touch controller firmware
 is loaded from the phone's own vendor partition (`firmware_class.path=/vendor/firmware`,
 set by the bootloader), the connectivity modules are built from Xiaomi's
-published GPL sources, and the camera fix patches the phone's own library at
-boot.
+published GPL sources, and the camera fixes patch the phone's own libraries at
+boot. The two prebuilt shims (`libremosaic_wrapper.so`,
+`libselene_afsession.so`) are built from the sources in `camera/`.
 
 ## Credits
 
 Xiaomi (kernel and module sources), the UBports porters and the Halium project.
+50 MP: the S5KJN1 full-resolution register table and the remosaic library come
+from [bellhopsw/q25-50mp](https://github.com/bellhopsw/q25-50mp) (MIT).
