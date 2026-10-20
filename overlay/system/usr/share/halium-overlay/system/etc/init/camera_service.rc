@@ -1,0 +1,11 @@
+on boot
+    exec - root -- /system/bin/micshm.sh
+
+service camera_service /system/bin/camera_service
+    class main
+    user media
+    group audio camera graphics media
+    ioprio rt 4
+    # selene: no AudioFlinger on Ubuntu Touch; without this the camera app
+    # hangs after stopping a video (see camera/afsession-shim)
+    setenv LD_PRELOAD /system/lib/hw/libselene_afsession.so

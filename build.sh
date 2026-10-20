@@ -11,7 +11,7 @@ BRANCH=${ADAPTATION_TOOLS_BRANCH:-main}
 
 # Android's init skips group/world-writable rc and prop files: make sure the
 # recovery and vendor overlays are not, whatever the umask of the checkout was.
-chmod -R go-w ramdisk-recovery-overlay overlay/system/usr/share/halium-overlay/vendor/etc
+chmod -R go-w ramdisk-recovery-overlay overlay/system/usr/share/halium-overlay/vendor/etc overlay/system/usr/share/halium-overlay/system/etc
 
 ./build/build.sh -k "$@"                  # kernel and boot.img
 ./scripts/build-connectivity.sh workdir  # out-of-tree vendor modules
