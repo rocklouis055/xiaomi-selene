@@ -8,8 +8,10 @@
 #
 # At boot, before the Android container starts, the first instruction of that
 # function in /system/lib64/libcameraservice.so is replaced by `ret` in a copy
-# under /run, which is bind-mounted over the original. Only the known library
-# (by checksum) is patched; any other build is left alone.
+# under /run/selene, which is bind-mounted over the original. Only the known
+# library (by checksum) is patched; any other build is left alone.
+# /run is noexec, so the copy gets a small tmpfs of its own that allows it to
+# be mapped executable (otherwise Android's media service cannot load it).
 set -eu
 
 LIB=${LIB:-/android/system/lib64/libcameraservice.so}
@@ -26,7 +28,10 @@ case "$(sha "$LIB")" in
     *) echo "selene-camera-macro: unknown libcameraservice.so, not patched" >&2; exit 0 ;;
 esac
 
-mkdir -p "$(dirname "$OUT")"
+DIR=$(dirname "$OUT")
+mkdir -p "$DIR"
+[ -n "${NO_MOUNT:-}" ] || mountpoint -q "$DIR" || \
+    mount -t tmpfs -o mode=0755,nosuid,size=16m selene "$DIR"
 cp "$LIB" "$OUT"
 # ff 03 03 d1 (sub sp) -> c0 03 5f d6 (ret)
 printf '\300\003\137\326' | dd of="$OUT" bs=1 seek="$OFFSET" conv=notrunc status=none
