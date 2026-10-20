@@ -22,6 +22,7 @@ Working (tested on 21061119BI):
   connection; `etc/NetworkManager/dispatcher.d/90-selene-hotspot`)
 - Mobile network: calls with VoLTE and call audio, SMS, mobile data, signal strength (dual SIM)
 - Audio: stereo speakers, earpiece, headphone jack, microphone, speakerphone
+- GPS (MediaTek GNSS, with the connectivity modules built here)
 - Sensors: rotation, proximity, light
 - Double tap to wake (System Settings; needs the kernel's NT36672C fix)
 - Cameras (camera app): photo and video, flash, autofocus, all rear cameras

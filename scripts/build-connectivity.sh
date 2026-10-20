@@ -1,5 +1,6 @@
 #!/bin/bash
-# Build the MediaTek connectivity modules (WMT, Wi-Fi, Bluetooth, connfem)
+# Build the MediaTek connectivity modules (WMT, Wi-Fi, Bluetooth, GPS,
+# FM radio, connfem)
 # against the kernel that halium-generic-adaptation-build-tools just built,
 # and put them where the Android vendor overlay picks them up:
 #   overlay/system/usr/share/halium-overlay/vendor/lib/modules/
@@ -76,11 +77,19 @@ build "$C/wlan/core/gen4m" CONFIG_MTK_COMBO_WIFI_HIF=axi MODULE_NAME=wlan_drv_ge
     MTK_COMBO_CHIP=CONNAC WLAN_CHIP_ID=6768 MTK_ANDROID_WMT=y MTK_ANDROID_EMI=y MTK_WLAN_SERVICE=yes \
     KBUILD_EXTRA_SYMBOLS="$C/common/Module.symvers $C/wlan/adaptor/Module.symvers"
 build "$C/bt/mt66xx/legacy" KBUILD_EXTRA_SYMBOLS="$C/common/Module.symvers"
+# GPS and FM radio: without these the vendor's 4.14 builds are tried and
+# rejected, mnld finds no /dev/stpgps and there is no /dev/fm
+build "$C/gps" AUTOCONF_H="$KERNEL_OBJ/include/generated/autoconf.h" \
+    KBUILD_EXTRA_SYMBOLS="$C/common/Module.symvers"
+build "$C/fmradio" AUTOCONF_H="$KERNEL_OBJ/include/generated/autoconf.h" \
+    CFG_FM_CHIP=mt6631 CFG_FM_CHIP_ID=6631 KBUILD_EXTRA_SYMBOLS="$C/common/Module.symvers"
 
 OUT="$HERE/overlay/system/usr/share/halium-overlay/vendor/lib/modules"
 mkdir -p "$OUT"
 install -m644 "$FIRE/connectivity/connfem/connfem.ko" "$C/common/wmt_drv.ko" \
     "$C/wlan/adaptor/wmt_chrdev_wifi.ko" "$C/wlan/core/gen4m/wlan_drv_gen4m.ko" "$OUT/"
 install -m644 "$C/bt/mt66xx/legacy/bt_drv.ko" "$OUT/bt_drv_connac1x.ko"
+install -m644 "$C/gps/gps_drv.ko" "$OUT/"   # ro.vendor.gps.chrdev=gps_drv
+install -m644 "$C/fmradio/fmradio_drv.ko" "$OUT/fmradio_drv_mt6631.ko"   # ro.vendor.fm.platform
 "$CLANG_PATH/bin/llvm-strip" --strip-debug "$OUT"/*.ko
 echo "connectivity modules for $(cat "$KERNEL_OBJ/include/config/kernel.release") in $OUT"
