@@ -23,6 +23,7 @@ Working (tested on 21061119BI):
 - Mobile network: calls with VoLTE and call audio, SMS, mobile data, signal strength (dual SIM)
 - Audio: stereo speakers, earpiece, headphone jack, microphone, speakerphone
 - Sensors: rotation, proximity, light
+- Double tap to wake (System Settings; needs the kernel's NT36672C fix)
 - Cameras (camera app): photo and video, flash, autofocus, all rear cameras
   including macro; real 50 MP photos (8160x6144) from the main camera
 - Video recording up to 2560x1440 at 30 fps (H.264, hardware encoder);

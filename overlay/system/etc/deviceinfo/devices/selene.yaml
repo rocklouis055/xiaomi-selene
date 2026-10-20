@@ -18,3 +18,6 @@ selene:
   BacklightSysfsPath: "/sys/class/leds/lcd-backlight"
   OfonoPlugin: binder
   VibrateDurationExtraMs: 50
+  # NT36672C wakeup gestures (needs kernel 0da3df30b: older kernels only
+  # take "5" and leave touch dead when this is switched while the screen is off)
+  DoubleTapToWake: "/proc/nvt_gesture_mode|1|0"
