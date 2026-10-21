@@ -5,3 +5,12 @@ include:
 
 variables:
   ADAPTATION_TOOLS_USE_BUILD_WRAPPER: 1
+
+# Licensing check (https://reuse.software)
+reuse:
+  stage: .pre
+  image:
+    name: fsfe/reuse:latest
+    entrypoint: [""]
+  script:
+    - reuse lint

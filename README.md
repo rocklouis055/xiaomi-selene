@@ -144,9 +144,18 @@ Main pieces of the overlay:
 
 ## Licensing and firmware
 
-The scripts and configuration in this repository are under the GPL-3.0
-(`LICENSE`). Files that override parts of Ubuntu Touch (the Lomiri component
-and camera app QML) keep the licence of the project they come from.
+The repository follows the [REUSE](https://reuse.software) specification
+(`reuse lint` passes, and CI runs it). `REUSE.toml` gives the copyright and
+licence of every file, and the licence texts are in `LICENSES/`:
+
+- The scripts and configuration written for this port: GPL-3.0-only (`LICENSE`).
+- Files that override parts of Ubuntu Touch keep the licence of the project
+  they come from: the Lomiri UI Toolkit QML (LGPL-3.0, with kugiigi's MariKit
+  back gesture, GPL-3.0), the camera app QML (GPL-3.0), `mount-android-partitions`
+  (lxc-android-config, GPL-3.0-or-later), `system-image-upgrader`
+  (halium_bootable_recovery, Apache-2.0) and the Android init scripts (Apache-2.0).
+- The patch to Xiaomi's connectivity driver: GPL-2.0-only, like the driver.
+- The remosaic shim and the library built from it: MIT (bellhopsw).
 
 No vendor firmware or binaries are included. The touch controller firmware
 is loaded from the phone's own vendor partition (`firmware_class.path=/vendor/firmware`,
