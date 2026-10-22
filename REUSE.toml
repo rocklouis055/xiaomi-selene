@@ -1,61 +1,11 @@
 version = 1
-SPDX-PackageName = "xiaomi-selene"
-SPDX-PackageSupplier = "louise-patra <rocklouis055@gmail.com>"
-SPDX-PackageDownloadLocation = "https://github.com/rocklouis055/xiaomi-selene"
 
-# Everything written for this port.
+# Everything written for this port
 [[annotations]]
 path = "**"
 precedence = "closest"
 SPDX-FileCopyrightText = "2026 louise-patra <rocklouis055@gmail.com>"
 SPDX-License-Identifier = "GPL-3.0-only"
-
-# Lomiri UI Toolkit files (Canonical, LGPL-3.0) with kugiigi's MariKit back
-# gesture (https://github.com/kugiigi/jerk-packages, UITK/MariKit/noble,
-# GPL-3.0); the MariKit*.qml files are new in MariKit.
-[[annotations]]
-path = "overlay/system/usr/lib/aarch64-linux-gnu/qt5/qml/Lomiri/Components/**"
-precedence = "override"
-SPDX-FileCopyrightText = [
-    "2013-2016 Canonical Ltd.",
-    "kugiigi",
-    "2026 louise-patra <rocklouis055@gmail.com>",
-]
-SPDX-License-Identifier = "LGPL-3.0-only AND GPL-3.0-only"
-
-[[annotations]]
-path = "overlay/system/usr/lib/aarch64-linux-gnu/qt5/qml/Lomiri/Components/1.3/MariKit*.qml"
-precedence = "override"
-SPDX-FileCopyrightText = "kugiigi"
-SPDX-License-Identifier = "GPL-3.0-only"
-
-# Lomiri Camera App (https://gitlab.com/ubports/development/apps/lomiri-camera-app)
-[[annotations]]
-path = "overlay/system/usr/share/click/preinstalled/camera.ubports/**"
-precedence = "override"
-SPDX-FileCopyrightText = [
-    "2014 Canonical Ltd.",
-    "UBports contributors",
-    "2026 louise-patra <rocklouis055@gmail.com>",
-]
-SPDX-License-Identifier = "GPL-3.0-only"
-
-# lxc-android-config (the file carries its own header)
-[[annotations]]
-path = "overlay/system/usr/libexec/lxc-android-config/mount-android-partitions"
-precedence = "aggregate"
-SPDX-FileCopyrightText = "2026 louise-patra <rocklouis055@gmail.com>"
-SPDX-License-Identifier = "GPL-3.0-or-later"
-
-# UBports halium_bootable_recovery (https://github.com/ubports/halium_bootable_recovery)
-[[annotations]]
-path = "ramdisk-recovery-overlay/system/bin/system-image-upgrader"
-precedence = "override"
-SPDX-FileCopyrightText = [
-    "UBports Foundation and contributors",
-    "2026 louise-patra <rocklouis055@gmail.com>",
-]
-SPDX-License-Identifier = "Apache-2.0"
 
 # Android init scripts of the Halium system and vendor images, with changes
 [[annotations]]
@@ -64,26 +14,19 @@ path = [
     "overlay/system/usr/share/halium-overlay/vendor/etc/init/vndservicemanager.rc",
 ]
 precedence = "override"
-SPDX-FileCopyrightText = [
-    "The Android Open Source Project",
-    "Halium contributors",
-    "2026 louise-patra <rocklouis055@gmail.com>",
-]
+SPDX-FileCopyrightText = ["The Android Open Source Project", "2026 louise-patra <rocklouis055@gmail.com>"]
 SPDX-License-Identifier = "Apache-2.0"
 
-# Patch to Xiaomi's MediaTek connectivity driver (GPL-2.0)
+# Patch to Xiaomi's MediaTek connectivity driver
 [[annotations]]
 path = "patches/connectivity/**"
 precedence = "override"
 SPDX-FileCopyrightText = "2026 louise-patra <rocklouis055@gmail.com>"
 SPDX-License-Identifier = "GPL-2.0-only"
 
-# Remosaic shim by bellhopsw (q25-50mp), and the library built from it
+# Remosaic shim by bellhopsw (https://github.com/bellhopsw/q25-50mp) and the library built from it
 [[annotations]]
-path = [
-    "camera/remosaic-shim/**",
-    "overlay/system/usr/share/halium-overlay/vendor/lib64/libremosaic_wrapper.so",
-]
+path = ["camera/remosaic-shim/**", "overlay/system/usr/share/halium-overlay/vendor/lib64/libremosaic_wrapper.so"]
 precedence = "override"
 SPDX-FileCopyrightText = "2026 bellhopsw"
 SPDX-License-Identifier = "MIT"

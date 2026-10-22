@@ -26,8 +26,9 @@ Working (tested on 21061119BI):
   `scripts/build-connectivity.sh`)
 - Sensors: rotation, proximity, light
 - Double tap to wake (System Settings; needs the kernel's NT36672C fix)
-- Cameras (camera app): photo and video, flash, autofocus, all rear cameras
-  including macro; real 50 MP photos (8160x6144) from the main camera
+- Cameras (camera app): photo and video, flash, autofocus, front and main
+  camera; real 50 MP photos (8160x6144) from the main camera. The ultra-wide
+  and macro cameras are there for apps, but the camera app has no lens switch
 - Video recording up to 2560x1440 at 30 fps (H.264, hardware encoder);
   4K is beyond the encoder (2560x1440 maximum)
 - Battery level and fast charging (QC 2.0, 9 V)
@@ -81,29 +82,22 @@ libssl-dev, lz4, cpio...), plus `git` with partial clone support.
 
 ## Installing
 
-The port boots from slot **b**. The stock vendor (the drivers) stays on slot a
-(`selene-dm-links` maps `vendor_b` to `vendor_a`), and Ubuntu Touch lives in
-the logical `system_b` partition, 4.5 GB.
+The port uses slot **a**: Ubuntu Touch lives in the logical `system_a`
+partition (4.5 GB), next to the stock `vendor_a` (the drivers).
 
-**Installing removes the stock Android system partitions** (`system_a`,
-`system_ext_a`) from super, which only has room for Ubuntu Touch without them.
-Stock MIUI does not boot afterwards; flash the stock firmware again to go
+**Installing replaces stock Android**: Ubuntu Touch is written over
+`system_a`, and the unused `system_ext_a` and `system_b` are removed from super
+to make room. Stock MIUI does not boot afterwards; flash the stock firmware again to go
 back. Back up anything you need first.
 
 1. Unlock the bootloader and flash the stock MIUI 14 (Android 12) firmware, so
    the vendor partition is the one this port is built for.
-2. `fastboot flash boot_b boot.img && fastboot set_active b`
+2. `fastboot flash boot_a boot.img && fastboot set_active a`
 3. Boot into the UBports recovery (Volume Up + Power) and install Ubuntu
    Touch with the UBports Installer, or push a system-image update to
-   `/cache/recovery`. The recovery removes the stock system partitions, grows
-   `system_b` to 4.5 GB and installs into it (the partition layout is set in
-   `ramdisk-recovery-overlay/system/etc/init/selene-systemimage.rc`).
-
-`ramdisk-recovery-overlay/system/bin/system-image-upgrader` is UBports' script
-with two fixes, marked `selene:`: `lpresize` changes the partition tables of
-both slots (the recovery maps the booted slot's table, the halium initramfs
-reads slot 0's), and the system partition is looked up again after the resize
-maps it to another device.
+   `/cache/recovery`. The recovery removes `system_ext_a` and `system_b`,
+   grows `system_a` to 4.5 GB and installs into it (the partition layout is
+   set in `ramdisk-recovery-overlay/system/etc/init/selene-systemimage.rc`).
 
 ## Layout
 
@@ -119,15 +113,16 @@ maps it to another device.
 Main pieces of the overlay:
 
 - `etc/ofono/binder.conf`: modem (MTK RIL, IRadio 1.4, VoLTE)
-- `etc/systemd/system/selene-dm-links.service`: slot b to slot a partition links
 - `usr/libexec/lxc-android-config/device-hacks`: Wi-Fi bring-up (WMT)
+- `usr/libexec/lxc-android-config/mount-android-partitions`: lxc-android-config's
+  script with one fix: a non-breaking space in `mkdir ... || true` (the
+  schedtune probe) makes it fail on this kernel
 - `etc/deviceinfo/devices/selene.yaml`, `etc/default/lsc-wrapper.d/`, `etc/ubuntu-touch-session.d/`: display, Mir (HWC2), scaling
 - `selene-refresh-rate`: 60/90 Hz, with its System Settings page
 - `selene-audio-tuning`: speakerphone tuning for the vendor audio HAL
 - `selene-waydroid-binder`: binder devices for Waydroid
 - `selene-otg-charge`: USB host mode while charging
-- `selene-camera-macro`: makes the macro camera reachable from the camera
-  app; at boot it patches one instruction of the device's own
+- `selene-camera-macro`: makes the macro camera reachable for apps; at boot it patches one instruction of the device's own
   `libcameraservice.so` (known build only, checked by checksum) in a copy
   under `/run` and bind-mounts it over the original
 - `selene-camera-50mp`: 50 MP photos. The kernel reads out the full sensor
@@ -140,7 +135,6 @@ Main pieces of the overlay:
 - `camera/afsession-shim/`: preloaded into Halium's `camera_service` so that
   stopping a video does not wait forever for Android's AudioFlinger (which
   Ubuntu Touch does not run) and hang the camera app
-- Lomiri component and camera app QML fixes for the screen shape and gestures
 
 ## Licensing and firmware
 
@@ -149,11 +143,8 @@ The repository follows the [REUSE](https://reuse.software) specification
 licence of every file, and the licence texts are in `LICENSES/`:
 
 - The scripts and configuration written for this port: GPL-3.0-only (`LICENSE`).
-- Files that override parts of Ubuntu Touch keep the licence of the project
-  they come from: the Lomiri UI Toolkit QML (LGPL-3.0, with kugiigi's MariKit
-  back gesture, GPL-3.0), the camera app QML (GPL-3.0), `mount-android-partitions`
-  (lxc-android-config, GPL-3.0-or-later), `system-image-upgrader`
-  (halium_bootable_recovery, Apache-2.0) and the Android init scripts (Apache-2.0).
+- `mount-android-partitions` (from lxc-android-config): GPL-3.0-or-later, as
+  in its header. The Android init scripts (`.rc`): Apache-2.0.
 - The patch to Xiaomi's connectivity driver: GPL-2.0-only, like the driver.
 - The remosaic shim and the library built from it: MIT (bellhopsw).
 
